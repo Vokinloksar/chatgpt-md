@@ -71,6 +71,9 @@ export const DEFAULT_HEADING_LEVEL = 3;
 export const MAX_HEADING_LEVEL = 6;
 export const DEFAULT_INFER_TITLE_LANGUAGE = "English";
 export const MIN_AUTO_INFER_MESSAGES = 4;
+// Local customization: auto-infer the title for each of the first N message
+// exchanges (user prompts), then stop.
+export const MAX_AUTO_INFER_EXCHANGES = 3;
 export const DEFAULT_DATE_FORMAT = "YYYYMMDDhhmmss";
 
 export const ERROR_NO_CONNECTION = "Failed to fetch";

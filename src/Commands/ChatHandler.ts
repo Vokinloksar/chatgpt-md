@@ -1,16 +1,17 @@
 import { Editor, MarkdownView, Notice, Platform } from "obsidian";
 import { ServiceContainer } from "src/core/ServiceContainer";
 import { getHeadingPrefix } from "src/Utilities/TextHelpers";
-import { getDefaultModelForService, isTitleTimestampFormat } from "src/Utilities/FrontmatterHelpers";
+import { getDefaultModelForService } from "src/Utilities/FrontmatterHelpers";
 import { ChatGPT_MDSettings, MergedFrontmatterConfig } from "src/Models/Config";
 import { Message } from "src/Models/Message";
 import {
   AI_SERVICE_OPENROUTER,
   CALL_CHATGPT_API_COMMAND_ID,
-  MIN_AUTO_INFER_MESSAGES,
+  MAX_AUTO_INFER_EXCHANGES,
   NOTICE_DURATION_LONG_MS,
   NOTICE_DURATION_SHORT_MS,
   PLUGIN_PREFIX,
+  ROLE_USER,
 } from "src/Constants";
 // DEFAULT_*_CONFIG imports removed - using getDefaultModelForService instead
 import { getAiApiUrls } from "./CommandUtilities";
@@ -99,11 +100,14 @@ export class ChatHandler {
 
       editorService.processResponse(editor, response, settings, targetFile);
 
-      if (
-        settings.autoInferTitle &&
-        isTitleTimestampFormat(targetFile?.basename, settings.dateFormat) &&
-        messagesWithRoleAndMessage.length > MIN_AUTO_INFER_MESSAGES
-      ) {
+      // Local customization: re-infer (refine) the title after each of the
+      // first MAX_AUTO_INFER_EXCHANGES message exchanges, then stop. The
+      // exchange number is the count of the user's prompts in the conversation
+      // (system messages are excluded). This replaces the upstream behaviour of
+      // inferring a single time only once the conversation grew past a fixed
+      // message count.
+      const userMessageCount = messagesWithRoleAndMessage.filter((m) => m.role === ROLE_USER).length;
+      if (settings.autoInferTitle && !response.wasAborted && userMessageCount <= MAX_AUTO_INFER_EXCHANGES) {
         // Create a settings object with the correct API key and model
         const settingsWithApiKey: ChatGPT_MDSettings & { url?: string; model?: string } = {
           ...settings,
@@ -126,7 +130,17 @@ export class ChatHandler {
           }
         }
 
-        await aiService.inferTitle(view, settingsWithApiKey as ChatGPT_MDSettings, messages, editorService, targetFile);
+        // Include the just-generated response so even the first exchange has
+        // enough context for a meaningful title.
+        const messagesForTitle = response.fullString ? [...messages, response.fullString] : messages;
+
+        await aiService.inferTitle(
+          view,
+          settingsWithApiKey as ChatGPT_MDSettings,
+          messagesForTitle,
+          editorService,
+          targetFile
+        );
       }
     } catch (err) {
       if (Platform.isMobile) {

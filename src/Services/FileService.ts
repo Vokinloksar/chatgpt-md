@@ -18,6 +18,13 @@ export class FileService {
     // Sanitize the title to remove invalid characters
     const sanitizedTitle = this.sanitizeFileName(title);
 
+    // Already named correctly — nothing to do. This guards against re-inference
+    // (e.g. refining the title over the first few exchanges) appending a
+    // " (1)" suffix because the file's own name "exists".
+    if (file.basename === sanitizedTitle) {
+      return;
+    }
+
     const currentFolder = file.parent?.path ?? "/";
     let newFileName = `${currentFolder}/${sanitizedTitle}.md`;
 
