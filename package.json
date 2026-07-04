@@ -1,5 +1,5 @@
 {
-  "name": "chatgpt-md",
+  "name": "chatgpt-md-local",
   "version": "3.1.0",
   "description": "A seamless integration of openAIs GPT LLMs and Ollama into Obsidian.",
   "main": "main.js",
