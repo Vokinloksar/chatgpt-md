@@ -327,11 +327,6 @@ export class AiProviderService implements IAiApiService {
     settings: ChatGPT_MDSettings
   ): Promise<string> => {
     try {
-      if (messages.length < 2) {
-        this.notificationService.showWarning("Not enough messages to infer title. Minimum 2 messages.");
-        return "";
-      }
-
       const prompt = `Infer title from the summary of the content of these messages. The title **cannot** contain any of the following characters: colon (:), back slash (\\), forward slash (/), asterisk (*), question mark (?), double quote ("), less than (<), greater than (>), or pipe (|) as these are invalid in file names. Just return the title. Write the title in ${settings.inferTitleLanguage}. \nMessages:${NEWLINE}${JSON.stringify(
         messages
       )}`;
